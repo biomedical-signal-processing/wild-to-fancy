@@ -195,5 +195,6 @@ fabric.properties
 .idea/
 /_notes
 
+/data/
 run_extract.sh
 run_extract_hypno.sh

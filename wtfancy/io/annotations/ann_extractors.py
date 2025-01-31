@@ -311,13 +311,7 @@ def extract_hyp_from_sta(file_path, **kwargs):
         durs.append(dur)
     return StartDurationStageFormat((starts, durs, stages))
 
-def extract_hyp_from_tsv(file_path, **kwargs):
-    """
-    Extracts hypnograms from tsv formatted annotation files.
-
-    Returns:
-        A StartDurationStageFormat object
-    """
+def _from_nsrr_tsv(file_path, **kwargs):
     import csv
     start_rec_found = False
     stage_dict = {
@@ -345,8 +339,10 @@ def extract_hyp_from_tsv(file_path, **kwargs):
                 stage = stage_dict[row['description']]
                 start = round(float(row['onset']) - (start_rec if start_rec_found else 0))
                 dur = round(float(row['duration']))
-                if dur % 30 != 0:
-                    break
+                try:
+                    assert dur % 30 == 0, "duration must a multiple of 30"
+                except AssertionError as e:
+                    raise ValueError(str(e))
                 if start < 0 and not check_start_rec:
                     from shutil import copyfile
                     dts_dir = os.path.split(file_path)[0] + '_NegStartRec'
@@ -361,10 +357,66 @@ def extract_hyp_from_tsv(file_path, **kwargs):
                 durs.append(dur)
         try:
             # Assert that the stages list is not all with UNKNOWN annotations
-            assert any(element != "UNKNOWN" for element in stages), "The sleep stages list contains only 'UNKNOWN' values"
+            assert any(
+                element != "UNKNOWN" for element in stages), "The sleep stages list contains only 'UNKNOWN' values"
         except AssertionError as e:
             # Raise an error if the assertion fails
             raise ValueError(str(e))
+    return starts, durs, stages
+
+def _from_bswr_tsv(file_path, **kwargs):
+    import csv
+    stage_dict = {
+        "SLEEP-S0": "W",
+        "SLEEP-S1": "N1",
+        "SLEEP-S2": "N2",
+        "SLEEP-S3": "N3",
+        "SLEEP-S4": "N3",
+        "SLEEP-?": "UNKNOWN",
+        "SLEEP-REM": "REM"
+    }
+    starts, durs, stages = [], [], []
+    with open(file_path) as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter='\t')
+        for row in csv_reader:
+            if row['trial_type'] in stage_dict:
+                # Easy check for multiple series of stages
+                if not starts:
+                    ch_stages = row['channels']
+                else:
+                    if (round(float(row['onset'])) - starts[-1]) < 30 and ch_stages != row['channels']:
+                        continue
+                stage = stage_dict[row['trial_type']]
+                start = round(float(row['onset']))
+                dur = round(float(row['duration']))
+                try:
+                    assert start >= 0 and dur % 30 == 0, "start must be >= 0 and duration must a multiple of 30"
+                except AssertionError as e:
+                    raise ValueError(str(e))
+                stages.append(stage)
+                starts.append(start)
+                durs.append(dur)
+        try:
+            # Assert that the stages list is not all with UNKNOWN annotations
+            assert any(
+                element != "UNKNOWN" for element in stages), "The sleep stages list contains only 'UNKNOWN' values"
+        except AssertionError as e:
+            # Raise an error if the assertion fails
+            raise ValueError(str(e))
+    return starts, durs, stages
+
+def extract_hyp_from_tsv(file_path, **kwargs):
+    """
+    Extracts hypnograms from tsv formatted annotation files.
+
+    Returns:
+        A StartDurationStageFormat object
+    """
+    starts, durs, stages = [], [], []
+    if os.path.basename(file_path).split('.')[-2].split('_')[-1] == 'events':
+        starts, durs, stages = _from_bswr_tsv(file_path)
+    else:
+        starts, durs, stages = _from_nsrr_tsv(file_path)
     return StartDurationStageFormat((starts, durs, stages))
 
 def extract_hyp_from_txt(file_path, **kwargs):

@@ -346,7 +346,15 @@ def fill_hyp_gaps(init_times_sec, durations_sec, stages, fill_value):
                 series_occ += 1
         # Skip if there are two series
         if series_occ:
-            return f'Error: two series of stages'
+            init_times_sec, durations_sec, stages = init_times_sec[0::2], durations_sec[0::2], stages[0::2]
+            if not hyp_has_gaps(init_times_sec, durations_sec):
+                # Do nothing
+                print('Extracted the first of the Two series of stages')
+                return init_times_sec, durations_sec, stages
+            else:
+                raise NotImplementedError("Error: two series of stages. The implementation has not yet been tested for its handling "
+                                          "of this situation. Please raise an issue on GitHub.")
+
     # Positive gaps
     if sum(gap_lengths > 0) != 0:
         print(f'-- Gaps filled: {sum(gap_lengths[gap_lengths > 0]) / 60:.3}min '

@@ -59,8 +59,11 @@ def get_argparser():
     parser.add_argument("--use_my_files", action="store_true",
                         help='Each PSG file will be saved as '
                              '<my>_<file name>.h5 instead of <file_name>.h5')
-    parser.add_argument("--del_nsrr_names", action="store_true",
-                        help='Delete "-nsrr" from Each PSG')
+    parser.add_argument("--external_db", action="store_true",
+                        help='Each PSG file will be saved as '
+                             '<my>_<file name>.h5 instead of <file_name>.h5')
+    parser.add_argument("--del_substring", type=str, default=None,
+                        help='Delete "del_substring" from Each PSG')
     parser.add_argument("--folders_to_skip", type=str, default=None,
                         help="Path to txt file with folders to skip")
     return parser
@@ -139,8 +142,8 @@ def extract(files, out_dir, channels, renamed_channels, logger, args):
             name = "my_" + os.path.splitext(os.path.split(file_)[-1])[0]
         else:
             name = os.path.splitext(os.path.split(file_)[-1])[0]  # name of the edf file without '.edf'
-            if args.del_nsrr_names:
-                name = name.replace('-nsrr', '')
+            if args.del_substring:
+                name = name.replace(f'{args.del_substring}', '')
         logger("------------------")
         logger("[*] {}/{} Processing {}".format(i + 1, len(files), name))
         out_dir_subject = os.path.join(out_dir, name)  # database_name/rec_name

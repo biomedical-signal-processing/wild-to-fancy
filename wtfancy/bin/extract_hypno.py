@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from glob import glob
 import os
+import shutil
 from pathlib import Path
 from wtfancy.logging import Logger
 from wtfancy.io.annotations import extract_ids_from_hyp_file
@@ -90,16 +91,45 @@ def run(args):
         try:
             start, dur, stage = extract_ids_from_hyp_file(file_)
         except Exception as e:
-            # If any error occurs, catch it and continue with the next iteration
+            # Print the error message
             print(f"An error occurred with file {file_}: {e}, skipping file ...")
+
+            # Define the `_errors` directory path
+            errors_dir = os.path.join(os.path.dirname(out_dir_subject), "hyp_errors")
+
+            # Check if the `_errors` directory exists, create it if not
+            if not os.path.exists(errors_dir):
+                os.makedirs(errors_dir)
+
+            # Move the entire `out_dir_subject` directory into `_errors`
+            if os.path.exists(out_dir_subject):
+                shutil.move(out_dir_subject, errors_dir)
+                print(f"Moved directory {out_dir_subject} to {errors_dir}")
+            else:
+                print(f"Directory {out_dir_subject} does not exist, skipping move.")
             continue
 
         try:
             if args.fill_blanks:
                 start, dur, stage = fill_hyp_gaps(start, dur, stage, args.fill_blanks)
         except Exception as e:
-            # If any error occurs, catch it and continue with the next iteration
-            print(f"An error occurred with fill_hyp_gaps: {e}, continuing with to_ids...")
+            # Print the error message
+            print(f"An error occurred with file {file_}: {e}, skipping file ...")
+
+            # Define the `_errors` directory path
+            errors_dir = os.path.join(os.path.dirname(out_dir_subject), "hyp_errors")
+
+            # Check if the `_errors` directory exists, create it if not
+            if not os.path.exists(errors_dir):
+                os.makedirs(errors_dir)
+
+            # Move the entire `out_dir_subject` directory into `_errors`
+            if os.path.exists(out_dir_subject):
+                shutil.move(out_dir_subject, errors_dir)
+                print(f"Moved directory {out_dir_subject} to {errors_dir}")
+            else:
+                print(f"Directory {out_dir_subject} does not exist, skipping move.")
+            continue
 
         to_ids(start, dur, stage, out)
 

@@ -84,8 +84,11 @@ def infer_channels(channel_str, relax=False):
         else:
             return split_channel_str
     else:
-        raise ValueError("Could not infer 1 or 2 (chan + ref) channels from "
-                         "channel string '{}'".format(channel_str))
+        # TODO - fix the len(split_channel_str) > 2
+        return "_".join(split_channel_str), None
+    # else:
+    #     raise ValueError("Could not infer 1 or 2 (chan + ref) channels from "
+    #                      "channel string '{}'".format(channel_str))
 
 
 class ChannelMontage:
